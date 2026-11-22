@@ -1,1 +1,0 @@
-"""Canonical Tesse package namespace."""
