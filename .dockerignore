@@ -4,8 +4,6 @@
 !README.md
 !tesse/
 !tesse/**
-!catalog/
-!catalog/**
 !docker/
 !docker/Dockerfile
 !docker/vendor/

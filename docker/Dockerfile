@@ -9,9 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /tmp/tesse
 COPY docker/vendor/ebinex_sdk-*.whl docker/vendor/ebinex-sdk.lock /tmp/sdk/
-COPY pyproject.toml README.md setup.py MANIFEST.in ./
+COPY pyproject.toml README.md ./
 COPY tesse ./tesse
-COPY catalog ./catalog
 RUN set -eu; \
     wheel=$(sed -n 's/^wheel=//p' /tmp/sdk/ebinex-sdk.lock); \
     digest=$(sed -n 's/^sha256=//p' /tmp/sdk/ebinex-sdk.lock); \
