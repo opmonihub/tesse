@@ -1,0 +1,111 @@
+# Referência Rank-Edge: preencha os snapshot, janelas e critérios do experimento autorizado.
+schema_version: 2
+proposal: rank-edge
+experiments:
+  edge-vs-raw:
+    snapshot:
+      manifest: <manifest-relative-to-data-root>.json
+      manifest_sha256: <manifest-sha256>
+      sha256: <payload-sha256>
+    windows:
+      train:
+        start: '2026-01-01T00:00:00Z'
+        end: '2026-02-01T00:00:00Z'
+      calibration:
+        start: '2026-02-01T00:00:00Z'
+        end: '2026-02-08T00:00:00Z'
+      evaluation:
+        start: '2026-02-08T00:00:00Z'
+        end: '2026-02-15T00:00:00Z'
+    nodes:
+      data:
+        component: snapshot.m1@1.0.0
+        inputs: {}
+        params: {}
+      features:
+        component: features.returns@1.0.0
+        inputs:
+          candles: data.candles
+        params:
+          periods:
+          - 1
+          - 5
+          - 15
+      base:
+        component: score.directional_return@1.0.0
+        inputs:
+          features: features.features
+        params:
+          period: 5
+      labels:
+        component: labels.directional@1.0.0
+        inputs:
+          candles: data.candles
+          scores: base.scores
+        params: {}
+      split:
+        component: split.temporal@1.0.0
+        inputs:
+          scores: base.scores
+          labels: labels.labels
+        params: {}
+      margin:
+        component: selection.edge_training@1.0.0
+        inputs:
+          train: split.train
+        params: {}
+      fit:
+        component: learner.hgb@1.0.0
+        inputs:
+          train: margin.train
+        params:
+          random_state: 20261119
+          monotonic_cst:
+          - 1
+          - 0
+          - 0
+          - 0
+      predict:
+        component: predict.hgb@1.0.0
+        inputs:
+          model: fit.model
+          calibration: split.calibration
+          evaluation: split.evaluation
+        params: {}
+      raw:
+        component: selection.raw_rank@1.0.0
+        inputs:
+          calibration: split.calibration
+          evaluation: split.evaluation
+        params: {}
+      edge:
+        component: selection.edge_rank@1.0.0
+        inputs:
+          calibration: predict.calibration
+          evaluation: predict.evaluation
+        params: {}
+      control:
+        component: replay.option_m1@1.0.0
+        inputs:
+          candles: data.candles
+          proposals: raw.proposals
+        params: {}
+      candidate:
+        component: replay.option_m1@1.0.0
+        inputs:
+          candles: data.candles
+          proposals: edge.proposals
+        params: {}
+      compare:
+        component: report.compare@1.0.0
+        inputs:
+          control: control.book
+          candidate: candidate.book
+        params: {}
+    result:
+      kind: comparison
+      from: compare.comparison
+    criteria:
+      min_winrate: 0.6
+      min_trades_per_day: 5
+      min_improvement_pp: 1

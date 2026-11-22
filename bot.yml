@@ -1,0 +1,119 @@
+strategy:
+  dmi_period: 3
+  adx_smoothing: 3
+  min_adx: 10.0
+operation:
+  profile_id: daily_protected_session
+  environment: TEST
+  balance:
+    source: broker_sdk
+    refresh: before_session
+    override_configured_bank: true
+  session:
+    cadence: daily
+    timezone: UTC
+    start: 00:00
+    end: '23:59'
+    max_sessions_per_day: 1
+    after_stop_win: next_day
+    after_stop_loss: same_session
+  capital:
+    value: 5.0
+    unit: percent_of_account_balance
+    scope: session
+  stop_loss:
+    value: 10.0
+    unit: account_currency
+    scope: calendar_day
+  stop_win:
+    value: 20.0
+    unit: account_currency
+    scope: calendar_day
+  stop_loss_split:
+    enabled: true
+    entries: 2
+    allocation: equal
+    reserve_before_entry: true
+  staking:
+    mode: soros
+    soros:
+      enabled: true
+      wins_to_complete: 2
+      reinvest_profit: true
+    flat:
+      enabled: true
+      amount: 1.0
+      unit: account_currency
+    martingale:
+      enabled: false
+      multiplier: 2.0
+      max_steps: 2
+      reset_on_win: true
+      max_session_exposure: 1.0
+  max_open_positions: 1
+  reentry: after_settlement
+  stop_when_limit_reached: true
+runtime:
+  environment: TEST
+  send_margin_seconds: 10.0
+  data_directory: data
+  pilot_sessions: 2
+  symbols:
+  - BTCUSDT
+  - ETHUSDT
+  - BNBUSDT
+  - SOLUSDT
+  aliases:
+    BTCUSDX: BTCUSDT
+    BTCUSDT: BTCUSDT
+    ETHUSDX: ETHUSDT
+    ETHUSDT: ETHUSDT
+    SOLUSDX: SOLUSDT
+    SOLUSDT: SOLUSDT
+    XRPUSDX: XRPUSDT
+    XRPUSDT: XRPUSDT
+    ADAUSDX: ADAUSDT
+    ADAUSDT: ADAUSDT
+    DOGEUSDX: DOGEUSDT
+    DOGEUSDT: DOGEUSDT
+    BNBUSDX: BNBUSDT
+    BNBUSDT: BNBUSDT
+history:
+  symbols:
+  - BTCUSDT
+  - ETHUSDT
+  - BNBUSDT
+  - SOLUSDT
+  - XRPUSDT
+  - ADAUSDT
+  - DOGEUSDT
+  - AVAXUSDT
+  - LINKUSDT
+  - LTCUSDT
+  initial_bank: 10000.0
+  payout: 0.9
+  tie: LOSS
+search:
+  dmi_period:
+  - 7
+  - 14
+  - 21
+  adx_smoothing:
+  - 7
+  - 14
+  - 21
+  min_adx:
+  - 20.0
+  - 25.0
+  - 30.0
+gates:
+  minimum_trades: 200
+  minimum_days: 20
+  bootstrap_samples: 1000
+  bootstrap_seed: 17
+  improvement_pp: 1.0
+learning:
+  enabled: true
+  minimum_retention: 0.2
+  minimum_trades: 200
+  minimum_days: 20

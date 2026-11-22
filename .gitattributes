@@ -1,0 +1,2 @@
+* text=auto eol=lf
+tests/fixtures/component_baseline.json -text

@@ -1,0 +1,26 @@
+name: tesse
+
+services:
+  tesse:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    image: tesse-worker:dev
+    pull_policy: never
+    init: true
+    command: ["worker"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+    volumes:
+      - ./:/app
+      - type: bind
+        source: ${TESSE_DATA_DIR:-./data}
+        target: /app/data
+        bind:
+          create_host_path: false
+    restart: unless-stopped
+    stop_grace_period: 3m30s

@@ -1,0 +1,7 @@
+# Referência Rank-Edge: descreva a estratégia candidata e a hipótese autorizada.
+schema_version: 2
+id: rank-edge
+strategy: Manter o núcleo da seleção bruta e reordenar propostas marginais com HGB
+question: Mais acertos nas margens?
+hypothesis: HGB melhora a seleção marginal sem trocar o lado
+# knowledge: [knowledge/um-conceito-revisado.md]

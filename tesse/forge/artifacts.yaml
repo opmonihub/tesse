@@ -1,0 +1,17 @@
+name: forge
+version: 2
+artifacts:
+  - id: proposal
+    generates: proposal.yaml
+    template: templates/proposal.yaml
+    requires: []
+  - id: protocol
+    generates: protocol.yaml
+    template: templates/protocol.yaml
+    requires: [proposal]
+  - id: run
+    generates: "runs/*/run.yaml"
+    requires: [proposal, protocol]
+    evidence:
+      predictions: {file: evidence.sqlite, table: predictions}
+      comparison: {file: evidence.sqlite, table: trades}

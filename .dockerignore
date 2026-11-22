@@ -1,0 +1,26 @@
+# Allow only the inputs needed by docker/Dockerfile.
+**
+!pyproject.toml
+!README.md
+!tesse/
+!tesse/**
+!catalog/
+!catalog/**
+!docker/
+!docker/Dockerfile
+!docker/vendor/
+!docker/vendor/ebinex_sdk-*.whl
+!docker/vendor/ebinex-sdk.lock
+
+# Never send operational inputs, even if accidentally placed in an allowed tree.
+**/bot.yml
+**/.env*
+**/data
+**/private
+**/*.sqlite*
+**/*.db*
+**/*.key
+**/*.ebs
+**/*.log
+**/__pycache__
+**/*.py[cod]
