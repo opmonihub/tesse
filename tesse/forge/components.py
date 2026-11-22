@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-from ..core import Candle, Params, signals
+from ..core import Candle, Params, price_movement, signals
 from ..primitives.features import orient_columns, trailing_population_std
 from ..primitives.ranking import (
     EdgeRankCalibration,
@@ -351,7 +351,7 @@ def _opportunity(asset, anchor, side):
 
 
 def _outcome(candle, side):
-    direction = np.sign(candle["c"] - candle["o"])
+    direction = price_movement(candle["o"], candle["c"])
     return "WIN" if direction == side else ("TIE" if direction == 0 else "LOSS")
 
 

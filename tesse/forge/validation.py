@@ -25,7 +25,7 @@ from .contracts import (
     slug,
     text,
 )
-from .graph import compile_graph, validate_managed_graph
+from .graph import compile_graph, require_viable_route, validate_managed_graph
 from .layout import project_directory
 
 MAX_YAML = 256 * 1024
@@ -280,7 +280,9 @@ def validate_documents(proposal_data, protocol_data, *, expected_id=None, worksp
             if kind != "comparison":
                 raise Invalid(managed_field, "modo gerenciado exige comparison")
             validate_managed_graph(nodes, result, managed_field)
-        experiments[e_id] = Experiment(e_id, snapshot, windows, nodes, result, kind, criteria, lineage)
+        experiment = Experiment(e_id, snapshot, windows, nodes, result, kind, criteria, lineage)
+        require_viable_route(experiment, field)
+        experiments[e_id] = experiment
     return Validation(Proposal(proposal_id, **statements, experiments=experiments, knowledge=knowledge), tuple(issues),
                       {pf: hashlib.sha256(proposal_data).hexdigest(), ef: hashlib.sha256(protocol_data).hexdigest()}, workspace)
 

@@ -15,7 +15,7 @@ import yaml
 from ebinex_sdk.services.market import CandleGapError
 
 from . import __version__
-from .core import Candle, Params, classify, signals, utcnow
+from .core import Candle, Params, classify_canonical, price_movement, signals, utcnow
 from .models.cards import ModelCard, card_hash
 
 ASSET = "BTCUSDT"
@@ -153,7 +153,10 @@ def _check_run(run, data_root):
             raise ValueError("Forge candidate candle identity differs")
         signal = signal_on_close(candles[max(0, index - WARMUP + 1):index + 1], anchor)
         candle = candles[indices[entry]]
-        observed = "TIE" if candle.open == candle.close else "WIN" if classify(direction, candle) == "WIN" else "LOSS"
+        observed = (
+            "TIE" if price_movement(candle.open, candle.close) == 0
+            else classify_canonical(direction, candle)
+        )
         if (signal is None or signal.direction != direction or not start <= decision < cutoff
                 or (signal.decision_at, signal.entry_at, signal.expiry_at) != (decision, entry, expiry)
                 or label != expiry + timedelta(seconds=2) or observed != outcome):

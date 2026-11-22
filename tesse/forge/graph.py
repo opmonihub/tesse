@@ -14,14 +14,30 @@ def uses_xgboost(experiment):
     return any(node.component == XGB_LEARNER for node in experiment.nodes)
 
 
-def require_supported_route(experiment, *, standalone_study=False):
+def _route_issue(experiment, *, standalone_study):
     xgboost = uses_xgboost(experiment)
     standalone_development = standalone_study and experiment.managed_lineage is not None
     if (any(node.component == VOLATILITY_SCORE for node in experiment.nodes)
             and not (xgboost and standalone_development)):
-        raise Invalid(VOLATILITY_SCORE, "volatilidade exige XGBoost em run --study avulso gerenciado de desenvolvimento")
+        return (
+            VOLATILITY_SCORE,
+            "volatilidade exige XGBoost em run --study avulso gerenciado de desenvolvimento",
+        )
     if xgboost and not standalone_development:
-        raise Invalid("learner.xgboost", "XGBoost exige run --study avulso gerenciado de desenvolvimento")
+        return "learner.xgboost", "XGBoost exige run --study avulso gerenciado de desenvolvimento"
+    return None
+
+
+def require_supported_route(experiment, *, standalone_study=False):
+    if issue := _route_issue(experiment, standalone_study=standalone_study):
+        raise Invalid(*issue)
+
+
+def require_viable_route(experiment, field):
+    """Reject a document only if neither route passes the component policy."""
+    if _route_issue(experiment, standalone_study=False) is not None:
+        if issue := _route_issue(experiment, standalone_study=True):
+            raise Invalid(field, f"experimento sem rota suportada: {issue[1]}")
 
 
 def _reference(value, field, nodes, expected):

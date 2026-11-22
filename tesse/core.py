@@ -113,16 +113,25 @@ def rank_signals(items):
     return sorted(items, key=key)
 
 
+def price_movement(opening: float, closing: float) -> int:
+    """Compare finite prices: +1 up, -1 down, 0 unchanged. Not a settlement."""
+    if closing > opening:
+        return 1
+    if closing < opening:
+        return -1
+    return 0
+
+
 def classify(direction: str, candle: Candle) -> str:
+    """Project the legacy replay result, including LOSE for a flat candle."""
     if direction not in {"CALL", "PUT"}:
         raise ValueError("Direção inválida")
-    win = candle.close > candle.open if direction == "CALL" else candle.close < candle.open
-    # Keep the historical broker spelling for this legacy helper. New runtime
-    # boundaries should use classify_canonical/normalize_outcome.
+    win = price_movement(candle.open, candle.close) == (1 if direction == "CALL" else -1)
     return "WIN" if win else "LOSE"
 
 
 def classify_canonical(direction: str, candle: Candle) -> str:
+    """Return the legacy price projection in canonical spelling, not broker status."""
     return normalize_outcome(classify(direction, candle))
 
 

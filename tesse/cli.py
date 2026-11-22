@@ -25,6 +25,7 @@ from .config import (
 )
 from .core import utcnow
 from .data import default_range, sync_symbol
+from .outcomes import CANONICAL_OUTCOMES, normalize_outcome
 from .state import Store
 from .versioning import project_active, recover_projection, sync_manual
 
@@ -364,11 +365,17 @@ def shadow_summary(store):
 def daily_report(store, day):
     outcomes, errors, groups = Counter(), Counter(), defaultdict(lambda: Counter())
     for row in store.db.execute("SELECT * FROM intents WHERE substr(entry_at,1,10)=?", (str(day),)):
-        outcomes[row["state"]] += 1
+        state = row["state"]
+        try:
+            outcome = normalize_outcome(state)
+        except ValueError:
+            outcome = state  # Keep unknown historical states visible in the total.
+        outcomes[outcome] += 1
         context = json.loads(row["context"])
-        if row["state"] in {"WIN", "LOSS", "LOSE"}:
-            key = f"{row['symbol']} {row['direction']} ADX {int(context['adx'] // 5) * 5}-{int(context['adx'] // 5) * 5 + 5}"
-            groups[key][row["state"]] += 1
+        if outcome in CANONICAL_OUTCOMES and (adx := context.get("adx")) is not None:
+            adx_start = int(adx // 5) * 5
+            key = f"{row['symbol']} {row['direction']} ADX {adx_start}-{adx_start + 5}"
+            groups[key][outcome] += 1
     for row in store.db.execute(
         "SELECT category,body FROM events WHERE substr(at,1,10)=?", (str(day),)
     ):

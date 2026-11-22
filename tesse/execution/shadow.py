@@ -5,7 +5,14 @@ from datetime import datetime
 from decimal import Decimal
 
 from ..config import effective_operation
-from ..core import Params, Session, SessionUnavailable, classify_canonical, operational_day
+from ..core import (
+    Params,
+    Session,
+    SessionUnavailable,
+    classify_canonical,
+    operational_day,
+    price_movement,
+)
 from ..state import dumps
 
 ASSETS = frozenset({"BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"})
@@ -113,7 +120,10 @@ class ShadowLedger:
                 else:
                     if candle.timestamp != entry_at:
                         raise ValueError("virtual settlement entry candle mismatch")
-                    status = "TIE" if candle.open == candle.close else classify_canonical(row["direction"], candle)
+                    status = (
+                        "TIE" if price_movement(candle.open, candle.close) == 0
+                        else classify_canonical(row["direction"], candle)
+                    )
                     session = store.restore({"body": dumps(state["session"])})
                     if session.stake != Decimal(row["stake"]):
                         raise ValueError("virtual settlement stake mismatch")
