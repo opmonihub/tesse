@@ -88,13 +88,11 @@ def parser():
         command.add_argument("--start", type=date_arg)
         command.add_argument("--end", type=date_arg)
     start = commands.add_parser("start", help="Iniciar processo em segundo plano")
-    modes = start.add_mutually_exclusive_group()
-    modes.add_argument(
-        "--observe-only", action="store_true", help="Acompanhar mercado sem enviar ordens"
+    start.add_argument(
+        "--shadow", action="store_true",
+        help="Simular DMI rápido com candles ao vivo; não enviar ordens",
     )
-    modes.add_argument("--shadow", action="store_true", help="Simular DMI rápido com candles ao vivo; não enviar ordens")
-    worker = commands.add_parser("worker", help="Executar o worker TEST em primeiro plano")
-    worker.add_argument("--observe-only", action="store_true", help="Acompanhar mercado sem enviar ordens")
+    commands.add_parser("worker", help="Executar o worker TEST em primeiro plano")
     commands.add_parser("resume", help="Retomar explicitamente um worker parado")
     status = commands.add_parser("status", help="Ver estado, versão e ordem pendente")
     status.add_argument("--watch", action="store_true")
@@ -142,9 +140,7 @@ def parser():
     resume.add_argument("drill_id_pos", nargs="?")
     resume.add_argument("--drill-id")
     worker = commands.add_parser("_worker", help=argparse.SUPPRESS)
-    worker_modes = worker.add_mutually_exclusive_group()
-    worker_modes.add_argument("--observe-only", action="store_true")
-    worker_modes.add_argument("--shadow", action="store_true")
+    worker.add_argument("--shadow", action="store_true")
     return p
 
 
@@ -477,7 +473,6 @@ def main(argv=None):
         if args.command in {"_worker", "worker"}:
             asyncio.run(run_worker(
                 path,
-                observe_only=args.observe_only,
                 shadow=getattr(args, "shadow", False),
                 foreground=args.command == "worker",
             ))
@@ -587,12 +582,12 @@ def main(argv=None):
                     raise ValueError("shadow_requires_no_pending_broker_order")
                 storage_config(root)
                 binding, _ = asyncio.run(journal_snapshot(root))
-                if not (args.observe_only or args.shadow) and (
+                if not args.shadow and (
                     not binding or binding != store.get("account_binding", binding)
                 ):
                     raise ValueError("Conta autenticada mudou; não misturar o histórico/Soros de outra conta")
                 store.set("stop_requested", False)
-                extra = ("--shadow",) if args.shadow else ("--observe-only",) if args.observe_only else ()
+                extra = ("--shadow",) if args.shadow else ()
                 process = spawn_background(path, "_worker", root, extra=extra)
                 for _ in range(30):
                     if process.poll() is not None:

@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-_REQUIRED_OBSERVE = (
+_REQUIRED_SIGNAL = (
     "environment",
     "provider",
     "model",
@@ -22,7 +22,9 @@ _REQUIRED_OBSERVE = (
     "signal_identity",
     "snapshot",
 )
-_REQUIRED_ORDER = _REQUIRED_OBSERVE + ("settlement_recovery", "order_test")
+_REQUIRED_ORDER = _REQUIRED_SIGNAL + ("settlement_recovery", "order_test")
+
+
 def _terminal_evidence(order_id, status, recovery) -> bool:
     return (
         isinstance(order_id, str) and bool(order_id.strip()) and recovery is True
@@ -119,7 +121,6 @@ def live_readiness_report(
     signal_identity: bool,
     snapshot_fresh: bool,
     sdk_ready: bool,
-    observe_only: bool,
 ) -> dict[str, Any]:
     """Evaluate current TEST checks; prior drills are not a source of permission."""
     checks = {
@@ -132,10 +133,9 @@ def live_readiness_report(
         "snapshot": snapshot_fresh,
         "sdk_orders_ready": sdk_ready,
     }
-    required = _REQUIRED_OBSERVE if observe_only else (*_REQUIRED_OBSERVE, "sdk_orders_ready")
-    blocked = [name for name in required if not checks[name]]
+    blocked = [name for name, passed in checks.items() if not passed]
     return {
-        "state": "blocked" if blocked else "observe_only_ready" if observe_only else "test_order_ready",
+        "state": "blocked" if blocked else "test_order_ready",
         "environment": config.operation.environment,
         "checks": checks,
         "blocked_by": blocked,
@@ -186,7 +186,7 @@ def readiness_report(
     if context and (context.get("risk_fingerprint") != _risk_fingerprint(config)
                     or context.get("config_fingerprint") != config.fingerprint()):
         binding_error = "evidence_context"
-    blocked_by = [name for name in _REQUIRED_OBSERVE if not checks[name]]
+    blocked_by = [name for name in _REQUIRED_SIGNAL if not checks[name]]
     if not blocked_by and not checks["settlement_recovery"]:
         # Recovery evidence is a prerequisite for controlled order submission,
         # while observation remains safe without it.
@@ -198,11 +198,12 @@ def readiness_report(
     if not blocked_by and binding_error:
         blocked_by.append(binding_error)
 
-    if not all(checks[name] for name in _REQUIRED_OBSERVE):
+    if not all(checks[name] for name in _REQUIRED_SIGNAL):
         state = "blocked"
     elif all(checks[name] for name in _REQUIRED_ORDER) and order_evidence_ok and not binding_error:
         state = "test_order_ready"
     else:
+        # Preserve the audit status for drill receipts; it does not select a worker mode.
         state = "observe_only_ready"
 
     return {

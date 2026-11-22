@@ -39,7 +39,7 @@ O worker consulta o journal e reconcilia pela identidade original ao reiniciar. 
 
 `stop --wait 180` pede parada e espera por até 180 segundos; o worker também acompanha a pendente por até 180 segundos. Consulte novamente se o comando retornar com processo ativo. Uma pendência inconclusiva continua durável e bloqueada para o reinício.
 
-`start --observe-only` desabilita envios também no SDK e não dispara revisão/calibração automática. Ainda conecta à conta e mantém estado; não o apresente como modo offline.
+`start --shadow` simula DMI rápido com candles ao vivo e desabilita envios no SDK. Ainda conecta à conta e mantém um livro simulado separado; não é modo offline. Não inicia com ordem pendente.
 
 ## Troca de perfil
 

@@ -367,7 +367,7 @@ async def run_shadow_worker(config_path):
     root = data_path(config_path, config)
     with ProcessLock(root / "worker.lock", timeout=1), Store(root / "state.sqlite") as store:
         def heartbeat(state, **extra):
-            store.set("worker", dict(pid=os.getpid(), state=state, at=utcnow(), observe_only=True,
+            store.set("worker", dict(pid=os.getpid(), state=state, at=utcnow(),
                                      shadow=True, version=VERSION, **extra))
 
         client = None
@@ -463,10 +463,8 @@ async def _connect_with_retry(client, store, stopping):
             delay = min(delay * 2, 30)
 
 
-async def run_worker(config_path, *, observe_only=False, shadow=False, foreground=False):
+async def run_worker(config_path, *, shadow=False, foreground=False):
     if shadow:
-        if observe_only:
-            raise ValueError("Escolha apenas um modo de observação")
         return await run_shadow_worker(config_path)
     config_path = Path(config_path).resolve()
     config = load_config(config_path)
@@ -509,7 +507,7 @@ async def run_worker(config_path, *, observe_only=False, shadow=False, foregroun
             else:
                 binding = await _restore_worker_journal(store, root)
             broker_clock = BrokerTime()
-            client = make_client(root, orders=not observe_only, clock=broker_clock)
+            client = make_client(root, orders=True, clock=broker_clock)
             if foreground:
                 if not await _connect_with_retry(client, store, stopping):
                     return
@@ -559,7 +557,6 @@ async def run_worker(config_path, *, observe_only=False, shadow=False, foregroun
                         pid=os.getpid(),
                         state="reconciling" if store.pending() else "waiting_signal",
                         at=now,
-                        observe_only=observe_only,
                     ),
                 )
                 store.set("sdk_readiness", client.readiness.model_dump())
@@ -575,7 +572,7 @@ async def run_worker(config_path, *, observe_only=False, shadow=False, foregroun
                         await client.disconnect()
                         client = None
                         binding = await _restore_worker_journal(store, root)
-                        client = make_client(root, orders=not observe_only, clock=broker_clock)
+                        client = make_client(root, orders=True, clock=broker_clock)
                         if foreground:
                             if not await _connect_with_retry(client, store, stopping):
                                 break
@@ -747,12 +744,9 @@ async def run_worker(config_path, *, observe_only=False, shadow=False, foregroun
                     bank = None
                     balance_ready = False
                     if selected:
-                        if not observe_only or selected_card.runtime_key == DEMO_DMI_RUNTIME_KEY:
-                            # Native balance before opening an order; never substitute simulated bank.
-                            bank = (await client.accounts.balance()).amount
-                            balance_ready = bank.is_finite() and bank > 0
-                        else:
-                            balance_ready = bool(getattr(client.readiness, "account_ready", False))
+                        # Native balance before opening an order; never substitute simulated bank.
+                        bank = (await client.accounts.balance()).amount
+                        balance_ready = bank.is_finite() and bank > 0
                     report = live_readiness_report(
                         config,
                         provider_healthy=bool(selected_provider and selected_card and selected_provider.is_healthy(selected_card)),
@@ -762,7 +756,6 @@ async def run_worker(config_path, *, observe_only=False, shadow=False, foregroun
                         signal_identity=identity_ok,
                         snapshot_fresh=not snapshot_status.get("stale", True),
                         sdk_ready=client.readiness.orders_ready,
-                        observe_only=observe_only,
                     )
                     store.set("readiness", report)
                     if stopping():

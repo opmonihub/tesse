@@ -17,7 +17,7 @@ Leia [recuperação e estado](references/runtime-and-recovery.md) antes de trata
 | --- | --- |
 | Consultar estado do worker | `status`, `versions`; inspecionar logs pertinentes sem segredos |
 | Sondar, coletar ou consultar histórico nativo | Fila `data ebinex`; acompanhe pelo ID, não pelo `status` do worker |
-| Acompanhar mercado sem ordens | `start --observe-only`; encerrar com `stop` |
+| Simular DMI rápido com candles ao vivo, sem ordens | `start --shadow`; encerrar com `stop` |
 | Iniciar execução TEST solicitada | `start` somente quando o gate TEST permitir; o worker não agenda revisão |
 | Parar novas entradas e acompanhar a pendente | `stop --wait 180`, depois conferir estado e sessão |
 | Gerar contabilidade diária | `report` grava relatório; não é consulta sem efeitos |
